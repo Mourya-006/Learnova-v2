@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learnova - AI Study Buddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel - Chat -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h1>Learnova</h1>
+                </div>
+                <p class="tagline">Your AI-Powered Study Buddy v2.0 🚀</p>
+                <button class="stats-btn" onclick="showStats()">
+                    <i class="fas fa-chart-line"></i> My Progress
+                </button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <i class="fas fa-robot message-icon"></i>
+                    <div class="message-content">
+                        <p>Hi! I'm Learnova, your study buddy! 👋</p>
+                        <p>Ask me anything about your studies, or use the features on the right!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" placeholder="Ask me anything..." />
+                <button id="sendBtn" class="btn-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel - Features -->
+        <div class="features-panel">
+            <!-- Study Timer -->
+            <div class="feature-card timer-card">
+                <div class="card-header">
+                    <i class="fas fa-clock feature-icon"></i>
+                    <h2>Study Timer</h2>
+                </div>
+                <div class="timer-display" id="timerDisplay">25:00</div>
+                <div class="timer-controls">
+                    <button id="startTimer" class="btn-primary">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button id="pauseTimer" class="btn-secondary" disabled>
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button id="resetTimer" class="btn-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                <div class="timer-presets">
+                    <button class="preset-btn" data-minutes="15">15 min</button>
+                    <button class="preset-btn active" data-minutes="25">25 min</button>
+                    <button class="preset-btn" data-minutes="45">45 min</button>
+                </div>
+                <div class="custom-time-input">
+                    <input type="number" id="customMinutes" class="time-input" placeholder="Custom minutes" min="1" max="180" />
+                    <button id="setCustomTime" class="btn-secondary">
+                        <i class="fas fa-check"></i> Set
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="feature-card">
+                <div class="card-header">
+                    <i class="fas fa-book-open feature-icon"></i>
+                    <h2>Explain Topic</h2>
+                </div>
+                <input type="text" id="topicInput" class="feature-input" placeholder="Enter topic..." />
+                <select id="difficultySelect" class="feature-select">
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate" selected>Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+                <button id="explainBtn" class="btn-primary">
+                    <i class="fas fa-lightbulb"></i> Explain
+                </button>
+            </div>
+
+            <div class="feature-card">
+                <div class="card-header">
+                    <i class="fas fa-question-circle feature-icon"></i>
+                    <h2>Generate Quiz</h2>
+                </div>
+                <input type="text" id="quizTopic" class="feature-input" placeholder="Quiz topic..." />
+                <div class="quiz-options">
+                    <select id="numQuestions" class="feature-select">
+                        <option value="3">3 Questions</option>
+                        <option value="5" selected>5 Questions</option>
+                        <option value="10">10 Questions</option>
+                    </select>
+                    <select id="quizDifficulty" class="feature-select">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate" selected>Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+                <button id="generateQuizBtn" class="btn-primary">
+                    <i class="fas fa-clipboard-list"></i> Create Quiz
+                </button>
+            </div>
+
+            <div class="feature-card">
+                <div class="card-header">
+                    <i class="fas fa-star feature-icon"></i>
+                    <h2>Study Tips</h2>
+                </div>
+                <input type="text" id="studySubject" class="feature-input" placeholder="Subject..." />
+                <select id="learningStyle" class="feature-select">
+                    <option value="visual" selected>Visual Learner</option>
+                    <option value="auditory">Auditory Learner</option>
+                    <option value="kinesthetic">Kinesthetic Learner</option>
+                </select>
+                <button id="getTipsBtn" class="btn-primary">
+                    <i class="fas fa-magic"></i> Get Tips
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div id="quizModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Quiz Time! 📝</h2>
+                <button class="close-modal" id="closeQuiz">&times;</button>
+            </div>
+            <div id="quizContent"></div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner-overlay">
+        <div class="spinner"></div>
+        <p>Thinking...</p>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-bar"></i> Your Learning Progress</h2>
+                <button class="close-modal" onclick="closeStatsModal()">&times;</button>
+            </div>
+            <div id="statsContent" class="stats-content"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

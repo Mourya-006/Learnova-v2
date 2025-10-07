@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Learnova API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #00bcd4, #009688);
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #009688; }
+        button {
+            background: #ffc107;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #ffb300; }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            white-space: pre-wrap;
+        }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Learnova API Test</h1>
+        <p>Click the buttons below to test if Gemini AI is responding:</p>
+        
+        <button onclick="testChat()">Test Chat API</button>
+        <button onclick="testExplain()">Test Explain API</button>
+        <button onclick="testQuiz()">Test Quiz API</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function testChat() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing chat API...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'What is 2+2? Answer in one sentence.' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.textContent = '✅ SUCCESS!\n\nQuestion: What is 2+2?\n\nAI Response:\n' + data.response;
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ ERROR: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ CONNECTION ERROR: ' + error.message;
+            }
+        }
+        
+        async function testExplain() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing explain API...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch('/api/explain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        topic: 'Photosynthesis', 
+                        difficulty: 'beginner' 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.textContent = '✅ SUCCESS!\n\nTopic: Photosynthesis (Beginner)\n\n' + data.explanation;
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ ERROR: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ CONNECTION ERROR: ' + error.message;
+            }
+        }
+        
+        async function testQuiz() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing quiz API...';
+            result.className = 'result';
+            
+            try {
+                const response = await fetch('/api/quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        topic: 'Mathematics', 
+                        num_questions: 3,
+                        difficulty: 'beginner'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.textContent = '✅ SUCCESS!\n\nGenerated ' + data.quiz.length + ' questions about Mathematics:\n\n';
+                    data.quiz.forEach((q, i) => {
+                        result.textContent += `\nQ${i+1}: ${q.question}\n`;
+                        q.options.forEach(opt => result.textContent += `  ${opt}\n`);
+                    });
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ ERROR: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ CONNECTION ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
