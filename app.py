@@ -234,8 +234,9 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     print("🚀 Starting Learnova v2.0 - Your AI Study Buddy!")
     print("="*60)
-    print(f"📚 Access the app at: http://localhost:5001")
-    print(f"🔑 Gemini API: {'✅ Enabled' if ai_helper.use_gemini else '⚠️  Disabled (using fallback)'}")
+    print(f" Gemini API: {'✅ Enabled' if ai_helper.use_gemini else '⚠️  Disabled (using fallback)'}")
     print("="*60 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    # Use PORT from environment for deployment platforms like Render
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=False, host='0.0.0.0', port=port)
