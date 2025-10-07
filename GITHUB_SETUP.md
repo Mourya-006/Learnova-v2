@@ -101,7 +101,7 @@ Click "Sign in" and use your **GitHub account**
 1. Click **"Advanced settings"** (⚙️) before deploying
 2. In the **"Secrets"** section, add:
 ```toml
-GEMINI_API_KEY = "AIzaSyC4h0rae0h107_dsEg4yb3f1RtBTJxQjbY"
+GEMINI_API_KEY = "your-actual-gemini-api-key-here"
 ```
 3. Click **"Save"**
 4. Click **"Deploy"**
