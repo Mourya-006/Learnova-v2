@@ -32,7 +32,19 @@
                 </div>
             </div>
 
+            <div class="file-attachment" id="fileAttachment">
+                <i class="fas fa-file"></i>
+                <span id="fileName">No file selected</span>
+                <button id="removeFile" title="Remove file">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
             <div class="chat-input-container">
+                <button id="uploadBtn" class="btn-icon" title="Upload file or image">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.doc,.docx" style="display: none;" />
                 <input type="text" id="chatInput" placeholder="Ask me anything..." />
                 <button id="sendBtn" class="btn-icon">
                     <i class="fas fa-paper-plane"></i>

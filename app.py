@@ -5,15 +5,28 @@ Flask Backend Application
 
 from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
 import random
 from ai_helper import AIHelper
 
+# Load environment variables from .env file
+load_dotenv()
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
+
+# File upload configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'txt', 'doc', 'docx'}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Initialize AI Helper
 print("🔧 Initializing AI Helper...")
@@ -22,6 +35,10 @@ ai_helper = AIHelper()
 # Data storage
 DATA_DIR = 'data'
 os.makedirs(DATA_DIR, exist_ok=True)
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_user_file(user_id):
     """Get path to user data file"""
@@ -60,14 +77,40 @@ def index():
 def chat():
     """Chat with AI"""
     try:
-        data = request.json
-        message = data.get('message', '')
+        # Handle both JSON and FormData
+        if request.is_json:
+            message = request.json.get('message', '')
+            file_path = None
+        else:
+            message = request.form.get('message', '')
+            file_path = None
+            
+            # Handle file upload
+            if 'file' in request.files:
+                file = request.files['file']
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                    file.save(file_path)
+                    print(f"📎 File uploaded: {file_path}")
         
         print(f"\n📩 Received chat message: '{message}'")
-        print(f"🔍 AI Helper use_gemini: {ai_helper.use_gemini}")
-        print(f"🔍 AI Helper model: {ai_helper.model}")
+        print(f"� File path: {file_path}")
+        print(f"�🔍 AI Helper use_gemini: {ai_helper.use_gemini}")
         
-        response = ai_helper.generate_response(message)
+        # Generate response with file context if available
+        if file_path:
+            response = ai_helper.generate_response_with_file(message, file_path)
+            # Clean up uploaded file after processing
+            try:
+                os.remove(file_path)
+                print(f"🗑️ Cleaned up file: {file_path}")
+            except:
+                pass
+        else:
+            response = ai_helper.generate_response(message)
         
         print(f"✅ Response generated: '{response[:100]}...'")
         

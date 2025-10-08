@@ -7,11 +7,17 @@ let timerRunning = false;
 let currentSessionId = null;
 let quizData = null;
 let userAnswers = {};
+let uploadedFile = null;
 
 // DOM Elements
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 const chatMessages = document.getElementById('chatMessages');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileInput = document.getElementById('fileInput');
+const fileAttachment = document.getElementById('fileAttachment');
+const fileName = document.getElementById('fileName');
+const removeFileBtn = document.getElementById('removeFile');
 const timerDisplay = document.getElementById('timerDisplay');
 const startTimerBtn = document.getElementById('startTimer');
 const pauseTimerBtn = document.getElementById('pauseTimer');
@@ -33,6 +39,11 @@ function setupEventListeners() {
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
+
+    // File Upload
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileSelect);
+    removeFileBtn.addEventListener('click', removeFile);
 
     // Timer
     startTimerBtn.addEventListener('click', startTimer);
@@ -62,20 +73,30 @@ function setupEventListeners() {
 // Chat Functions
 async function sendMessage() {
     const message = chatInput.value.trim();
-    if (!message) return;
+    if (!message && !uploadedFile) return;
 
     // Add user message
-    addMessage(message, 'user');
+    if (message) {
+        addMessage(message, 'user');
+    }
+    if (uploadedFile) {
+        addMessage(`📎 Attached: ${uploadedFile.name}`, 'user');
+    }
     chatInput.value = '';
 
     // Show loading
     showLoading();
 
     try {
+        const formData = new FormData();
+        formData.append('message', message);
+        if (uploadedFile) {
+            formData.append('file', uploadedFile);
+        }
+
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
+            body: formData
         });
 
         const data = await response.json();
@@ -83,6 +104,10 @@ async function sendMessage() {
 
         if (data.success) {
             addMessage(data.response, 'bot');
+            // Clear uploaded file after sending
+            if (uploadedFile) {
+                removeFile();
+            }
         } else {
             addMessage('Sorry, I encountered an error. Please try again!', 'bot');
         }
@@ -91,6 +116,29 @@ async function sendMessage() {
         console.error('Chat error:', error);
         addMessage('Connection error. Please check your connection and try again.', 'bot');
     }
+}
+
+// File Upload Functions
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+    }
+
+    uploadedFile = file;
+    fileName.textContent = file.name;
+    fileAttachment.classList.add('active');
+}
+
+function removeFile() {
+    uploadedFile = null;
+    fileInput.value = '';
+    fileName.textContent = 'No file selected';
+    fileAttachment.classList.remove('active');
 }
 
 function addMessage(text, type) {

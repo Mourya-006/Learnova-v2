@@ -5,7 +5,8 @@ Learnova is an intelligent study companion that helps you learn more effectively
 ## ✨ Features
 
 - 💬 **AI Chat Assistant** - Ask questions and get helpful explanations
-- 📚 **Topic Explanations** - Get detailed explanations at different difficulty levels
+- � **File Upload** - Upload images and documents for AI analysis
+- �📚 **Topic Explanations** - Get detailed explanations at different difficulty levels
 - 📝 **Quiz Generator** - Create custom quizzes on any topic
 - 💡 **Study Tips** - Personalized tips based on your learning style
 - ⏱️ **Study Timer** - Pomodoro timer with session tracking
@@ -15,7 +16,7 @@ Learnova is an intelligent study companion that helps you learn more effectively
 
 ### 1. Get Your Gemini API Key
 
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
 4. Copy your API key
@@ -27,23 +28,58 @@ cd Learnova-v2
 pip install -r requirements.txt
 ```
 
-### 3. Set Your API Key & Run
+### 3. Set Your API Key
 
+**Option A: Using .env file (Recommended)**
+```powershell
+# Create .env file
+echo "GEMINI_API_KEY=your-api-key-here" > .env
+```
+
+**Option B: Using environment variable**
 ```powershell
 $env:GEMINI_API_KEY="your-api-key-here"
+```
+
+**Option C: Using setup script**
+```cmd
+setup_api_key.bat
+```
+
+### 4. Run the App
+
+```powershell
 python app.py
 ```
 
-### 4. Open Learnova
+### 5. Open Learnova
 
-Open your browser and go to: **http://localhost:5000**
+Open your browser and go to: **http://localhost:5001**
+
+## 🔒 Security - IMPORTANT!
+
+⚠️ **NEVER commit your `.env` file to GitHub!**
+
+Your API key is sensitive and should be kept secret:
+- ✅ `.env` is already in `.gitignore` (protected)
+- ✅ Use `.env.example` as a template
+- ✅ Each developer gets their own API key
+- ❌ Never share your actual API key
+- ❌ Never commit `.env` to version control
+
+**See `SECURITY.md` for detailed security guidelines.**
+
+Before pushing to GitHub:
+```powershell
+git status  # Verify .env is NOT listed
+```
 
 ## 🎨 Theme
 
-Learnova features a beautiful **Teal & Yellow** color scheme:
-- Teal gradient background (#00bcd4 to #009688)
-- Yellow accent buttons (#ffc107)
-- Clean white cards with smooth animations
+Learnova features a beautiful **Black & Orange** color scheme:
+- Dark gradient background (#181818 to #232526)
+- Vibrant orange accents (#ff9800, #ffb300)
+- Modern dark theme with smooth animations
 
 ## 📁 Project Structure
 

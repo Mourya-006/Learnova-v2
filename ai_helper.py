@@ -101,6 +101,81 @@ Your response:"""
             traceback.print_exc()
             return self._fallback_response()
     
+    def generate_response_with_file(self, message, file_path):
+        """Generate AI response with file/image context"""
+        print(f"\n🤖 generate_response_with_file called")
+        print(f"   Message: '{message[:100]}'")
+        print(f"   File: {file_path}")
+        print(f"   use_gemini: {self.use_gemini}")
+        
+        if not self.use_gemini or not self.model:
+            return self._fallback_file_response()
+        
+        try:
+            import google.generativeai as genai
+            from PIL import Image
+            
+            file_ext = file_path.rsplit('.', 1)[1].lower()
+            
+            # Handle images
+            if file_ext in ['png', 'jpg', 'jpeg', 'gif']:
+                print("   📷 Processing image...")
+                image = Image.open(file_path)
+                
+                if message:
+                    prompt = f"""You are Learnova, a helpful AI study buddy. Analyze this image and answer the student's question.
+
+Student question: {message}
+
+Provide a clear, educational response based on the image content."""
+                else:
+                    prompt = "Analyze this image and explain what you see. Help the student understand the content."
+                
+                response = self.model.generate_content([prompt, image])
+                return response.text
+            
+            # Handle text files
+            elif file_ext in ['txt', 'pdf']:
+                print("   📄 Processing text file...")
+                
+                # Read text content
+                if file_ext == 'txt':
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                else:
+                    # For PDF, we'll need PyPDF2 or similar
+                    try:
+                        import PyPDF2
+                        with open(file_path, 'rb') as f:
+                            pdf_reader = PyPDF2.PdfReader(f)
+                            content = ""
+                            for page in pdf_reader.pages[:5]:  # First 5 pages only
+                                content += page.extract_text()
+                    except:
+                        return "I can see you uploaded a PDF, but I need the PyPDF2 library to read it. For now, please try uploading images or text files! 📄"
+                
+                prompt = f"""You are Learnova, a helpful AI study buddy. The student has uploaded a document with the following content:
+
+--- Document Content ---
+{content[:3000]}  
+---
+
+Student's question: {message if message else "Please explain and summarize this document"}
+
+Provide a helpful, educational response."""
+                
+                response = self.model.generate_content(prompt)
+                return response.text
+            
+            else:
+                return "Sorry, I can only process images (PNG, JPG, JPEG, GIF) and text files (TXT, PDF) at the moment. 📎"
+                
+        except Exception as e:
+            print(f"   ❌ File processing error: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._fallback_file_response()
+    
     def explain_topic(self, topic, difficulty='intermediate'):
         """Explain a topic"""
         print(f"\n📚 explain_topic: '{topic}' ({difficulty})")
@@ -221,6 +296,22 @@ I can help you with:
 Try the buttons on the right to explore different features!
 
 ⚠️ Note: AI features require Gemini API key to be set."""
+    
+    def _fallback_file_response(self):
+        """Fallback file processing response"""
+        return """📎 **File Upload Feature**
+
+I can see you've uploaded a file! However, to analyze files and images, I need the Gemini API key to be configured.
+
+**What I can do with files:**
+• 📷 Analyze images and diagrams
+• 📄 Read and summarize text documents
+• 🤔 Answer questions about uploaded content
+
+**To enable this feature:**
+Set up your Gemini API key in the environment variables or Streamlit secrets.
+
+⚠️ Currently using fallback mode."""
     
     def _fallback_explain(self, topic):
         """Fallback explanation"""
