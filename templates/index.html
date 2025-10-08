@@ -17,9 +17,70 @@
                     <h1>Learnova</h1>
                 </div>
                 <p class="tagline">Your AI-Powered Study Buddy v2.0 🚀</p>
-                <button class="stats-btn" onclick="showStats()">
-                    <i class="fas fa-chart-line"></i> My Progress
-                </button>
+                
+                <!-- User Profile Icon - Top Right -->
+                <div class="user-profile-corner">
+                    {% if user %}
+                    <!-- Authenticated User -->
+                    <div class="profile-dropdown">
+                        <button class="profile-btn" onclick="toggleProfileMenu()">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture }}" alt="{{ user.name }}" class="profile-avatar">
+                            {% else %}
+                            <div class="profile-avatar-placeholder">
+                                {{ user.name[0].upper() }}
+                            </div>
+                            {% endif %}
+                        </button>
+                        <div class="profile-menu" id="profileMenu">
+                            <div class="profile-menu-header">
+                                <div class="profile-menu-name">{{ user.name }}</div>
+                                <div class="profile-menu-email">{{ user.email }}</div>
+                            </div>
+                            <div class="profile-menu-divider"></div>
+                            <button class="profile-menu-item" onclick="showStats()">
+                                <i class="fas fa-chart-line"></i> My Progress
+                            </button>
+                            <button class="profile-menu-item" onclick="toggleTheme()">
+                                <i class="fas fa-moon theme-icon"></i> <span class="theme-text">Dark Theme</span>
+                            </button>
+                            <div class="profile-menu-divider"></div>
+                            <button class="profile-menu-item logout-item" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Guest User -->
+                    <div class="profile-dropdown">
+                        <button class="profile-btn guest-btn" onclick="toggleProfileMenu()" title="Sign In / Sign Up">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div class="profile-menu" id="profileMenu">
+                            <div class="profile-menu-header guest-header">
+                                <i class="fas fa-user-circle" style="font-size: 32px; color: #ff9800;"></i>
+                                <div class="profile-menu-name">Guest Mode</div>
+                                <div class="profile-menu-email">Sign in to save progress</div>
+                            </div>
+                            <div class="profile-menu-divider"></div>
+                            <a href="/login" class="profile-menu-item">
+                                <i class="fas fa-sign-in-alt"></i> Sign In
+                            </a>
+                            <a href="/signup" class="profile-menu-item signup-item">
+                                <i class="fas fa-user-plus"></i> Sign Up
+                            </a>
+                            <div class="profile-menu-divider"></div>
+                            <button class="profile-menu-item" onclick="toggleTheme()">
+                                <i class="fas fa-moon theme-icon"></i> <span class="theme-text">Dark Theme</span>
+                            </button>
+                            <div class="profile-menu-divider"></div>
+                            <button class="profile-menu-item" onclick="closeProfileMenu()">
+                                <i class="fas fa-times"></i> Continue as Guest
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
             <div class="chat-messages" id="chatMessages">
@@ -170,6 +231,62 @@
             <div id="statsContent" class="stats-content"></div>
         </div>
     </div>
+
+    <!-- Welcome Popup (only for guests on first visit) -->
+    {% if not user %}
+    <div id="welcomePopup" class="welcome-popup">
+        <div class="welcome-popup-content">
+            <div class="welcome-header">
+                <i class="fas fa-graduation-cap"></i>
+                <h2>Welcome to Learnova!</h2>
+                <button class="popup-close" onclick="closeWelcomePopup()">&times;</button>
+            </div>
+            <p class="welcome-message">Your AI-powered study buddy is ready to help you learn! 🚀</p>
+            
+            <div class="welcome-options">
+                <div class="welcome-option">
+                    <div class="option-icon guest-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Continue as Guest</h3>
+                    <p>Start immediately, no signup needed</p>
+                    <ul class="option-features">
+                        <li><i class="fas fa-check"></i> Full AI features</li>
+                        <li><i class="fas fa-check"></i> File upload</li>
+                        <li><i class="fas fa-times"></i> Progress not saved</li>
+                    </ul>
+                    <button class="btn-option btn-guest" onclick="continueAsGuest()">
+                        <i class="fas fa-rocket"></i> Continue as Guest
+                    </button>
+                </div>
+                
+                <div class="welcome-option highlighted">
+                    <div class="option-badge">Recommended</div>
+                    <div class="option-icon auth-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h3>Sign In / Sign Up</h3>
+                    <p>Save your progress and sync across devices</p>
+                    <ul class="option-features">
+                        <li><i class="fas fa-check"></i> All features</li>
+                        <li><i class="fas fa-check"></i> Progress saved</li>
+                        <li><i class="fas fa-check"></i> Multi-device sync</li>
+                    </ul>
+                    <div class="auth-buttons-popup">
+                        <a href="/login" class="btn-option btn-login-popup">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </a>
+                        <a href="/signup" class="btn-option btn-signup-popup">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="welcome-footer">You can always sign up later to save your progress!</p>
+        </div>
+    </div>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

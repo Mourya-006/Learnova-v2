@@ -1,4 +1,4 @@
-// Learnova - Frontend JavaScript
+// Learnova - Frontend JavaScript - World's Best Study App
 
 // State
 let timerInterval = null;
@@ -8,6 +8,196 @@ let currentSessionId = null;
 let quizData = null;
 let userAnswers = {};
 let uploadedFile = null;
+
+// ============================================
+// RIPPLE EFFECT FOR BUTTONS
+// ============================================
+function createRipple(event) {
+    const button = event.currentTarget;
+    const ripple = document.createElement('span');
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    ripple.classList.add('ripple');
+    
+    button.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+}
+
+// Add ripple effect to all buttons
+function initializeRippleEffects() {
+    const buttons = document.querySelectorAll('button, .btn-primary, .btn-secondary, .quick-action');
+    buttons.forEach(button => {
+        button.style.position = 'relative';
+        button.style.overflow = 'hidden';
+        button.addEventListener('click', createRipple);
+    });
+}
+
+// ============================================
+// TYPING INDICATOR FOR BOT MESSAGES
+// ============================================
+function showTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.classList.add('message', 'bot-message', 'typing-indicator');
+    typingDiv.id = 'typingIndicator';
+    typingDiv.innerHTML = `
+        <div class="message-icon">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="message-content typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    `;
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// Profile Menu Functions
+function toggleProfileMenu() {
+    const profileMenu = document.getElementById('profileMenu');
+    if (profileMenu) {
+        profileMenu.classList.toggle('active');
+    }
+}
+
+function closeProfileMenu() {
+    const profileMenu = document.getElementById('profileMenu');
+    if (profileMenu) {
+        profileMenu.classList.remove('active');
+    }
+}
+
+// Theme Toggle Functions
+function toggleTheme() {
+    const body = document.body;
+    const currentTheme = body.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Update icon and text
+    updateThemeUI(newTheme);
+}
+
+function updateThemeUI(theme) {
+    const themeIcons = document.querySelectorAll('.theme-icon');
+    const themeTexts = document.querySelectorAll('.theme-text');
+    
+    themeIcons.forEach(icon => {
+        if (theme === 'light') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+    });
+    
+    themeTexts.forEach(text => {
+        text.textContent = theme === 'light' ? 'Light Theme' : 'Dark Theme';
+    });
+}
+
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeUI(savedTheme);
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(event) {
+    const profileDropdown = document.querySelector('.profile-dropdown');
+    const profileMenu = document.getElementById('profileMenu');
+    
+    if (profileDropdown && profileMenu && !profileDropdown.contains(event.target)) {
+        profileMenu.classList.remove('active');
+    }
+});
+
+// Authentication Functions
+async function handleLogout() {
+    if (!confirm('Are you sure you want to logout?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            window.location.href = '/login';
+        } else {
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('An error occurred during logout.');
+    }
+}
+
+// Welcome Popup Functions
+function showWelcomePopup() {
+    const welcomePopup = document.getElementById('welcomePopup');
+    if (welcomePopup) {
+        // Check if user has already seen the popup this session
+        const hasSeenPopup = sessionStorage.getItem('hasSeenWelcomePopup');
+        if (!hasSeenPopup) {
+            welcomePopup.classList.remove('hidden');
+        }
+    }
+}
+
+function closeWelcomePopup() {
+    const welcomePopup = document.getElementById('welcomePopup');
+    if (welcomePopup) {
+        welcomePopup.classList.add('hidden');
+        // Mark as seen for this session
+        sessionStorage.setItem('hasSeenWelcomePopup', 'true');
+    }
+}
+
+function continueAsGuest() {
+    closeWelcomePopup();
+    // Optional: Show a brief notification
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        const guestNotification = document.createElement('div');
+        guestNotification.className = 'message bot-message';
+        guestNotification.innerHTML = `
+            <i class="fas fa-robot message-icon"></i>
+            <div class="message-content">
+                <p>Welcome, Guest! 👋</p>
+                <p>You're using Learnova in guest mode. All features are available, but your progress won't be saved.</p>
+                <p>Click <strong>Sign Up</strong> anytime to save your progress!</p>
+            </div>
+        `;
+        chatMessages.appendChild(guestNotification);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
 
 // DOM Elements
 const chatInput = document.getElementById('chatInput');
@@ -28,8 +218,19 @@ const quizModal = document.getElementById('quizModal');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme(); // Load saved theme
+    initializeRippleEffects(); // Add ripple effects to buttons
     setupEventListeners();
     updateTimerDisplay();
+    
+    // Show welcome popup for guests
+    setTimeout(showWelcomePopup, 500); // Small delay for better UX
+    
+    // Add entrance animations to feature cards
+    const featureCards = document.querySelectorAll('.feature-card');
+    featureCards.forEach((card, index) => {
+        card.style.animation = `slideUp 0.6s ease ${index * 0.1}s backwards`;
+    });
 });
 
 // Event Listeners
@@ -84,8 +285,8 @@ async function sendMessage() {
     }
     chatInput.value = '';
 
-    // Show loading
-    showLoading();
+    // Show typing indicator
+    showTypingIndicator();
 
     try {
         const formData = new FormData();
@@ -100,7 +301,7 @@ async function sendMessage() {
         });
 
         const data = await response.json();
-        hideLoading();
+        hideTypingIndicator();
 
         if (data.success) {
             addMessage(data.response, 'bot');
@@ -112,7 +313,7 @@ async function sendMessage() {
             addMessage('Sorry, I encountered an error. Please try again!', 'bot');
         }
     } catch (error) {
-        hideLoading();
+        hideTypingIndicator();
         console.error('Chat error:', error);
         addMessage('Connection error. Please check your connection and try again.', 'bot');
     }

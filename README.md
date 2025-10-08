@@ -4,6 +4,28 @@ Learnova is an intelligent study companion that helps you learn more effectively
 
 ## ✨ Features
 
+### 🎭 **Guest Mode (No Signup Required!)**
+- ⚡ **Instant Access** - Start using immediately, no account needed
+- 💬 **AI Chat Assistant** - Ask questions and get helpful explanations
+- 📎 **File Upload** - Upload images and documents for AI analysis
+- 📚 **Topic Explanations** - Get detailed explanations at different difficulty levels
+- 📝 **Quiz Generator** - Create custom quizzes on any topic
+- 💡 **Study Tips** - Personalized tips based on your learning style
+- ⏱️ **Study Timer** - Pomodoro timer with session tracking
+
+### 👤 **Authenticated Mode (Optional)**
+- 💾 **Progress Saving** - All study sessions saved to your account
+- 📊 **Progress Tracking** - Monitor study history across sessions
+- 🌐 **Multi-device Sync** - Access from any device
+- 🔐 **Email/Password or Google Sign-In**
+- 👤 **Profile** - Personalized experience with your name and picture
+
+**Start as a guest, sign up later to save your progress!** - AI-Powered Study Buddy
+
+Learnova is an intelligent study companion that helps you learn more effectively using Google's Gemini AI.
+
+## ✨ Features
+
 - 💬 **AI Chat Assistant** - Ask questions and get helpful explanations
 - � **File Upload** - Upload images and documents for AI analysis
 - �📚 **Topic Explanations** - Get detailed explanations at different difficulty levels

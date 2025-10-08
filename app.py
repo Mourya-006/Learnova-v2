@@ -3,22 +3,56 @@ Learnova - AI-Powered Study Buddy
 Flask Backend Application
 """
 
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_cors import CORS
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
+from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
 import random
 from ai_helper import AIHelper
+from models import db, User
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 CORS(app)
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///learnova.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this feature.'
+login_manager.login_message_category = 'info'
+
+# Initialize Flask-Bcrypt
+bcrypt = Bcrypt(app)
+
+# Initialize OAuth
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login"""
+    return User.query.get(int(user_id))
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
@@ -64,18 +98,219 @@ def save_user_data(user_id, data):
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=2)
 
+# ============================================
+# Authentication Routes
+# ============================================
+
+@app.route('/login')
+def login():
+    """Login page"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    return render_template('auth.html', mode='login')
+
+@app.route('/signup')
+def signup():
+    """Signup page"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    return render_template('auth.html', mode='signup')
+
+@app.route('/api/auth/signup', methods=['POST'])
+def api_signup():
+    """Handle email/password signup"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        name = data.get('name', '').strip()
+        password = data.get('password', '')
+        
+        # Validation
+        if not email or not name or not password:
+            return jsonify({'success': False, 'message': 'All fields are required'}), 400
+        
+        if len(password) < 6:
+            return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({'success': False, 'message': 'Email already registered'}), 400
+        
+        # Create new user
+        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(
+            email=email,
+            name=name,
+            password_hash=password_hash
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Log the user in
+        login_user(new_user, remember=True)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Account created successfully!',
+            'user': new_user.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Signup error: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred during signup'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Handle email/password login"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        # Validation
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'Email and password are required'}), 400
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not user.password_hash:
+            return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
+        
+        # Check password
+        if not bcrypt.check_password_hash(user.password_hash, password):
+            return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
+        
+        # Log the user in
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        login_user(user, remember=True)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful!',
+            'user': user.to_dict()
+        })
+        
+    except Exception as e:
+        print(f"❌ Login error: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred during login'}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def api_logout():
+    """Handle logout"""
+    if current_user.is_authenticated:
+        logout_user()
+    return jsonify({'success': True, 'message': 'Logged out successfully'})
+
+@app.route('/api/auth/user')
+def api_get_user():
+    """Get current user info"""
+    if current_user.is_authenticated:
+        return jsonify({
+            'success': True,
+            'authenticated': True,
+            'user': current_user.to_dict()
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'authenticated': False,
+            'user': None
+        })
+
+@app.route('/auth/google')
+def google_login():
+    """Initiate Google OAuth login"""
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    """Handle Google OAuth callback"""
+    try:
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            flash('Failed to get user info from Google', 'error')
+            return redirect(url_for('login'))
+        
+        email = user_info.get('email')
+        name = user_info.get('name')
+        google_id = user_info.get('sub')
+        profile_picture = user_info.get('picture')
+        
+        # Check if user exists
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Update Google ID and profile picture if not set
+            if not user.google_id:
+                user.google_id = google_id
+            if not user.profile_picture:
+                user.profile_picture = profile_picture
+            user.last_login = datetime.utcnow()
+        else:
+            # Create new user
+            user = User(
+                email=email,
+                name=name,
+                google_id=google_id,
+                profile_picture=profile_picture
+            )
+            db.session.add(user)
+        
+        db.session.commit()
+        login_user(user, remember=True)
+        
+        flash('Successfully logged in with Google!', 'success')
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        print(f"❌ Google OAuth error: {e}")
+        flash('An error occurred during Google login', 'error')
+        return redirect(url_for('login'))
+
+# ============================================
+# Main Application Routes
+# ============================================
+
+@app.route('/test')
+def test():
+    """Test route to verify server is working"""
+    return f"""
+    <html>
+    <body style="background: #000; color: #0f0; font-family: monospace; padding: 50px;">
+        <h1>✅ Server is Working!</h1>
+        <p>If you see this, the Flask server is running correctly.</p>
+        <p>Authenticated: {current_user.is_authenticated}</p>
+        <p><a href="/" style="color: #ff9800;">Click here to go to main page</a></p>
+    </body>
+    </html>
+    """
+
 @app.route('/')
 def index():
-    """Main page"""
-    if 'user_id' not in session:
-        session['user_id'] = f"user_{random.randint(1000, 9999)}"
-    print(f"\n🌐 Index page requested by user: {session['user_id']}")
+    """Main page - accessible to everyone (guest or logged in)"""
+    if current_user.is_authenticated:
+        print(f"\n🌐 Index page requested by authenticated user: {current_user.email}")
+    else:
+        # Guest mode
+        if 'guest_id' not in session:
+            session['guest_id'] = f"guest_{random.randint(10000, 99999)}"
+        print(f"\n🌐 Index page requested by guest: {session['guest_id']}")
+    
     print(f"🔍 AI Helper status: use_gemini={ai_helper.use_gemini}")
-    return render_template('index.html')
+    print(f"✅ Rendering index.html for {'authenticated user' if current_user.is_authenticated else 'guest'}")
+    return render_template('index.html', user=current_user if current_user.is_authenticated else None)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Chat with AI"""
+    """Chat with AI - accessible to everyone"""
     try:
         # Handle both JSON and FormData
         if request.is_json:
@@ -274,10 +509,21 @@ def stats():
         }), 500
 
 if __name__ == '__main__':
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        print("✅ Database initialized")
+    
+    # Print all registered routes for debugging
+    print("\n📋 Registered Routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"   {rule.endpoint:30} {rule.rule}")
+    
     print("\n" + "="*60)
     print("🚀 Starting Learnova v2.0 - Your AI Study Buddy!")
     print("="*60)
     print(f" Gemini API: {'✅ Enabled' if ai_helper.use_gemini else '⚠️  Disabled (using fallback)'}")
+    print(f" Authentication: ✅ Enabled")
     print("="*60 + "\n")
     
     # Use PORT from environment for deployment platforms like Render
