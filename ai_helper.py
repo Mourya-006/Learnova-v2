@@ -40,22 +40,23 @@ class AIHelper:
         
         # Try to import and configure Gemini
         try:
-            import google.generativeai as genai
+            from google import genai
             
-            # Configure API
-            genai.configure(api_key=api_key)
+            # Configure API (new google-genai SDK)
+            self.client = genai.Client(api_key=api_key)
             
-            # Create model - use gemini-flash-latest (works with all API keys)
-            self.model = genai.GenerativeModel('gemini-flash-latest')
+            # Model name for Gemini 2.5 Flash
+            self.model_name = 'gemini-2.5-flash'
+            self.model = self.client  # keep self.model truthy for use_gemini checks
             self.use_gemini = True
             
-            print("✅ Gemini AI successfully initialized with gemini-flash-latest!")
+            print("✅ Gemini AI successfully initialized with gemini-2.5-flash!")
             print(f"🔍 use_gemini flag set to: {self.use_gemini}")
-            print(f"🔍 model object: {self.model}")
+            print(f"🔍 client object: {self.client}")
                 
         except ImportError:
-            print("❌ ERROR: google-generativeai package not installed")
-            print("   Install with: pip install google-generativeai")
+            print("❌ ERROR: google-genai package not installed")
+            print("   Install with: pip install google-genai")
             self.use_gemini = False
         except Exception as e:
             print(f"❌ ERROR initializing Gemini: {e}")
@@ -89,7 +90,10 @@ Student message: {message}
 
 Your response:"""
             
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             result = response.text
             
             print(f"   ✅ Gemini responded: '{result[:100]}...'")
@@ -112,7 +116,7 @@ Your response:"""
             return self._fallback_file_response()
         
         try:
-            import google.generativeai as genai
+            from google import genai
             from PIL import Image
             
             file_ext = file_path.rsplit('.', 1)[1].lower()
@@ -131,7 +135,10 @@ Provide a clear, educational response based on the image content."""
                 else:
                     prompt = "Analyze this image and explain what you see. Help the student understand the content."
                 
-                response = self.model.generate_content([prompt, image])
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=[prompt, image]
+                )
                 return response.text
             
             # Handle text files
@@ -164,7 +171,10 @@ Student's question: {message if message else "Please explain and summarize this 
 
 Provide a helpful, educational response."""
                 
-                response = self.model.generate_content(prompt)
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt
+                )
                 return response.text
             
             else:
@@ -203,7 +213,10 @@ Include:
 
 Keep it engaging and educational!"""
             
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text
             
         except Exception as e:
@@ -233,7 +246,10 @@ Return ONLY valid JSON array (no markdown, no explanations):
 
 Make questions progressively challenging."""
             
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             content = response.text.strip()
             
             # Remove markdown code blocks
@@ -273,7 +289,10 @@ Include:
 
 Be actionable and encouraging!"""
             
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text
             
         except Exception as e:
